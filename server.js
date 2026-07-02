@@ -78,6 +78,30 @@ app.get("/api/batters", async (req, res) => {
 });
 
 // --------------------------------------
+// API: Leaders Button
+// --------------------------------------
+app.get("/api/leaders", async (req, res) => {
+    try {
+        const season = req.query.season;
+
+        if (!season) {
+            return res.status(400).json({ error: "Season required" });
+        }
+
+        const result = await runRScript("leaders.r", [season]);
+
+        const data = JSON.parse(result);
+
+        res.json(data);
+
+    } catch (err) {
+        console.error("Leaders API error:", err);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
+
+// --------------------------------------
 // API: Last Updated timestamp for batting CSV
 // --------------------------------------
 app.get("/api/last-updated/batters/:season", (req, res) => {
