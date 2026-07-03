@@ -6,9 +6,9 @@ library(jsonlite)
 args <- commandArgs(trailingOnly = TRUE)
 season <- args[1]
 
-csv_path <- sprintf("stathead_batting_%s.csv", season)
+file_path <- file.path(getwd(), sprintf("stathead_batting_%s.csv", season))
 
-df <- read.csv(csv_path, stringsAsFactors = FALSE)
+df <- read.csv(file_path, stringsAsFactors = FALSE)
 
 df <- df %>%
   mutate(
