@@ -2,7 +2,6 @@
 
 library(dplyr)
 library(jsonlite)
-library(stringi)
 
 args <- commandArgs(trailingOnly = TRUE)
 season <- args[1]
@@ -12,7 +11,6 @@ file_path <- file.path(getwd(), sprintf("stathead_batting_%s.csv", season))
 df <- read.csv(file_path, stringsAsFactors = FALSE)
 
 df <- df %>%
-  mutate(across(everything(), ~ stringi::stri_trans_general(., "Latin-ASCII"))) %>%
   mutate(
     Kpct  = round((SO / PA) * 100, 1),
     BBpct = round((BB / PA) * 100, 1),
@@ -20,6 +18,5 @@ df <- df %>%
     OBP   = round(OBP, 3),
     SLG   = round(SLG, 3)
   )
-
 
 cat(toJSON(df, pretty = FALSE, auto_unbox = TRUE))
