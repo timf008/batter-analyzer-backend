@@ -19,7 +19,13 @@ app.use((req, res, next) => {
 // Name Normalization (Latin accents → ASCII)
 // ---------------------------
 function normalizeNameBackend(x) {
-    return x.trim();
+    return x
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^\w\s-]/g, "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toUpperCase();
 }
 
 
