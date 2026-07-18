@@ -2,6 +2,7 @@
 
 library(dplyr)
 library(jsonlite)
+library(stringi)   # <-- add this
 
 args <- commandArgs(trailingOnly = TRUE)
 season <- args[1]
@@ -9,6 +10,15 @@ season <- args[1]
 file_path <- file.path(getwd(), sprintf("stathead_batting_%s.csv", season))
 
 df <- read.csv(file_path, stringsAsFactors = FALSE)
+
+# ---------------------------------------------------------
+# PATCH: Normalize player names (accents → ASCII, uppercase)
+# ---------------------------------------------------------
+df <- df %>%
+  mutate(
+    Name = stri_trans_general(Name, "Latin-ASCII"),
+    Name = toupper(Name)
+  )
 
 df <- df %>%
   mutate(
