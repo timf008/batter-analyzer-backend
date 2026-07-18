@@ -19,12 +19,9 @@ app.use((req, res, next) => {
 // Name Normalization (Latin accents → ASCII)
 // ---------------------------
 function normalizeNameBackend(x) {
-    return x
-        .normalize("NFKD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .trim()
-        .toUpperCase();
+    return x.trim();
 }
+
 
 // ---------------------------
 // Safe Rscript wrapper with timeout
