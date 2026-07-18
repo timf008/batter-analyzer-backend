@@ -22,8 +22,6 @@ function normalizeNameBackend(x) {
     return x
         .normalize("NFKD")
         .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^A-Za-z0-9\s-]/g, "")
-        .replace(/\s+/g, " ")
         .trim()
         .toUpperCase();
 }
