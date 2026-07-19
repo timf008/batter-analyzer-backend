@@ -21,12 +21,14 @@ app.use((req, res, next) => {
 function normalizeNameBackend(x) {
     return x
         .normalize("NFKD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^\w\s-]/g, "")
+        .replace(/[\u0300-\u036f]/g, "")   // remove accents only
+        .replace(/[,*#†+]/g, "")           // remove junk symbols
+        .replace(/\./g, "")                // remove periods
         .replace(/\s+/g, " ")
         .trim()
         .toUpperCase();
 }
+
 
 
 // ---------------------------
