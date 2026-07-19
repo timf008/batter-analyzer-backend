@@ -87,17 +87,15 @@ const { spawn } = require("child_process");
 function runRScript(scriptName, args = []) {
     return new Promise((resolve, reject) => {
         const child = spawn("Rscript", [scriptName, ...args], {
-            cwd: __dirname
+            cwd: __dirname,
+            encoding: "utf8"   // ⭐ FIX: decode UTF‑8 at spawn time
         });
-
-        child.stdout.setEncoding("utf8");   // ⭐ FIX
-        child.stderr.setEncoding("utf8");   // ⭐ FIX
 
         let output = "";
         let errorOutput = "";
 
         child.stdout.on("data", (data) => {
-            output += data;
+            output += data;   // already decoded as UTF‑8
         });
 
         child.stderr.on("data", (data) => {
@@ -112,6 +110,7 @@ function runRScript(scriptName, args = []) {
         });
     });
 }
+
 
 
 // --------------------------------------
