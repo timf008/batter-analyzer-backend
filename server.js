@@ -7,11 +7,12 @@ const fs = require("fs");
 const app = express();
 
 // ---------------------------
-// GLOBAL CORS (must be first)
+// GLOBAL CORS + UTF‑8 (must be first)
 // ---------------------------
 app.use(cors());
 app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Content-Type", "application/json; charset=utf-8");   // ⭐ FIX
     next();
 });
 
@@ -28,8 +29,6 @@ function normalizeNameBackend(x) {
         .trim()
         .toUpperCase();
 }
-
-
 
 // ---------------------------
 // Safe Rscript wrapper with timeout
@@ -111,7 +110,6 @@ function runRScript(scriptName, args = []) {
     });
 }
 
-
 // --------------------------------------
 // API: Leaders Button
 // --------------------------------------
@@ -133,8 +131,6 @@ app.get("/api/leaders", async (req, res) => {
         res.status(500).json({ error: "Server error" });
     }
 });
-
-
 
 // --------------------------------------
 // API: Last Updated timestamp for batting CSV
@@ -168,5 +164,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Batter Analyzer running at http://localhost:${PORT}`);
 });
-
-
