@@ -90,15 +90,18 @@ function runRScript(scriptName, args = []) {
             cwd: __dirname
         });
 
+        child.stdout.setEncoding("utf8");   // ⭐ FIX
+        child.stderr.setEncoding("utf8");   // ⭐ FIX
+
         let output = "";
         let errorOutput = "";
 
         child.stdout.on("data", (data) => {
-            output += data.toString();
+            output += data;
         });
 
         child.stderr.on("data", (data) => {
-            errorOutput += data.toString();
+            errorOutput += data;
         });
 
         child.on("close", (code) => {
@@ -109,6 +112,7 @@ function runRScript(scriptName, args = []) {
         });
     });
 }
+
 
 // --------------------------------------
 // API: Leaders Button
