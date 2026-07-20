@@ -75,9 +75,12 @@ df <- df %>%
     kpctScore  = scoreKpct(Kpct),
     bbpctScore = scoreBBpct(BBpct),
 
-    # Weighted overall score
-    overall = computeWeightedOverall(
-      baScore, obpScore, slgScore, kpctScore, bbpctScore
+    # Weighted overall score (rounded to .1)
+    overall = round(
+      computeWeightedOverall(
+        baScore, obpScore, slgScore, kpctScore, bbpctScore
+      ),
+      1
     ),
 
     # XP (your sabermetric formula)
@@ -87,8 +90,9 @@ df <- df %>%
          (BBpct * 2) -
          (Kpct * 1.5)
   ) %>%
-  arrange(desc(overall)) %>%   # sort by overall score
-  slice(1:20)                  # top 20 leaders
+  arrange(desc(overall)) %>%
+  slice(1:20)
 
 cat(toJSON(df, pretty = FALSE, auto_unbox = TRUE))
+
 
