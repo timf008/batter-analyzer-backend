@@ -15,9 +15,7 @@ season <- args[2]
 # Converts ALL formats → "FIRST LAST"
 # ============================================================
 normalize_name <- function(x) {
-    # Remove accents reliably
     x <- stri_trans_general(x, "Latin-ASCII")
-
     x <- gsub("[,*#†+]", "", x)
     x <- gsub("\\.", "", x)
     x <- gsub("\\s+", " ", x)
@@ -84,24 +82,10 @@ df$NameClean <- sapply(df[[name_col]], normalize_name)
 df$Season <- as.numeric(gsub("[^0-9]", "", as.character(df$Season)))
 
 # ============================================================
-# Filter for player + season
-# ============================================================
-p <- df %>%
-  filter(
-    NameClean == player_name_clean,
-    Season == as.numeric(season)
-  )
-
-if (nrow(p) == 0) {
-    cat(toJSON(list(error = "Player not found"), auto_unbox = TRUE))
-    quit(status = 1)
-}
-
-# ============================================================
 # Detect key batting columns safely
 # ============================================================
 get_col <- function(pattern) {
-    cols <- names(p)[str_detect(names(p), pattern)]
+    cols <- names(df)[str_detect(names(df), pattern)]
     if (length(cols) == 0) return(NA_character_)
     cols[1]
 }
@@ -126,64 +110,119 @@ b3_col  <- get_col("^3B$")
 # Fallback for singles if 1B missing
 # ============================================================
 if (is.na(b1_col) && !is.na(h_col) && !is.na(b2_col) && !is.na(b3_col) && !is.na(hr_col)) {
-    p$Singles_calc <- p[[h_col]] - (p[[b2_col]] + p[[b3_col]] + p[[hr_col]])
+    df$Singles_calc <- df[[h_col]] - (df[[b2_col]] + df[[b3_col]] + df[[hr_col]])
     b1_col <- "Singles_calc"
 }
 
 # ============================================================
-# Recalculate BA, OBP, SLG
+# Recalculate BA, OBP, SLG for ALL players
 # ============================================================
-p$BA_calc <- NA_real_
-p$OBP_calc <- NA_real_
-p$SLG_calc <- NA_real_
+df$BA_calc <- ifelse(!is.na(ab_col) & df[[ab_col]] > 0, df[[h_col]] / df[[ab_col]], NA_real_)
 
-if (!is.na(ab_col) && !is.na(h_col)) {
-    p$BA_calc <- ifelse(p[[ab_col]] > 0, p[[h_col]] / p[[ab_col]], NA_real_)
-}
-
-# OBP: (H + BB + HBP) / (AB + BB + HBP + SF)
 if (!is.na(ab_col) && !is.na(h_col) && !is.na(bb_col)) {
-    HBP <- if (!is.na(hbp_col)) p[[hbp_col]] else 0
-    SF  <- if (!is.na(sf_col))  p[[sf_col]]  else 0
+    HBP <- if (!is.na(hbp_col)) df[[hbp_col]] else 0
+    SF  <- if (!is.na(sf_col))  df[[sf_col]]  else 0
 
-    num <- p[[h_col]] + p[[bb_col]] + HBP
-    den <- p[[ab_col]] + p[[bb_col]] + HBP + SF
+    num <- df[[h_col]] + df[[bb_col]] + HBP
+    den <- df[[ab_col]] + df[[bb_col]] + HBP + SF
 
-    p$OBP_calc <- ifelse(den > 0, num / den, NA_real_)
+    df$OBP_calc <- ifelse(den > 0, num / den, NA_real_)
+} else {
+    df$OBP_calc <- NA_real_
 }
 
-# SLG: TB / AB
-if (!is.na(tb_col) && !is.na(ab_col)) {
-    p$SLG_calc <- ifelse(p[[ab_col]] > 0, p[[tb_col]] / p[[ab_col]], NA_real_)
-}
+df$SLG_calc <- ifelse(!is.na(tb_col) & !is.na(ab_col) & df[[ab_col]] > 0,
+                      df[[tb_col]] / df[[ab_col]],
+                      NA_real_)
 
 # ============================================================
 # Compute K% and BB% (per PA)
 # ============================================================
-p$Kpct <- NA_real_
-p$BBpct <- NA_real_
+df$Kpct <- ifelse(!is.na(pa_col) & df[[pa_col]] > 0,
+                  (df[[so_col]] / df[[pa_col]]) * 100,
+                  NA_real_)
 
-if (!is.na(pa_col) && !is.na(so_col)) {
-    p$Kpct <- ifelse(p[[pa_col]] > 0, (p[[so_col]] / p[[pa_col]]) * 100, NA_real_)
-}
+df$BBpct <- ifelse(!is.na(pa_col) & df[[pa_col]] > 0,
+                   (df[[bb_col]] / df[[pa_col]]) * 100,
+                   NA_real_)
 
-if (!is.na(pa_col) && !is.na(bb_col)) {
-    p$BBpct <- ifelse(p[[pa_col]] > 0, (p[[bb_col]] / p[[pa_col]]) * 100, NA_real_)
+# ============================================================
+# Percentile helper
+# ============================================================
+percentile <- function(x, higher_is_better = TRUE) {
+    valid <- !is.na(x)
+    if (higher_is_better) {
+        return(rank(x, na.last = "keep") / sum(valid) * 100)
+    } else {
+        return(rank(-x, na.last = "keep") / sum(valid) * 100)
+    }
 }
 
 # ============================================================
-# Build JSON output (core metrics + extra raw stats)
+# Backend Overall Score (same formula as frontend)
+# ============================================================
+score_ba <- function(ba) {
+    pmin(pmax(10 * (ba - 0.240) / (0.300 - 0.240), 0), 10)
+}
+
+score_obp <- function(obp) {
+    pmin(pmax(10 * (obp - 0.300) / (0.380 - 0.300), 0), 10)
+}
+
+score_slg <- function(slg) {
+    pmin(pmax(10 * (slg - 0.380) / (0.550 - 0.380), 0), 10)
+}
+
+score_kpct <- function(kpct) {
+    pmin(pmax(10 * (30 - kpct) / (30 - 15), 0), 10)
+}
+
+score_bbpct <- function(bbpct) {
+    pmin(pmax(10 * (bbpct - 5) / (12 - 5), 0), 10)
+}
+
+compute_overall <- function(ba, obp, slg, kpct, bbpct) {
+    score_ba(ba)   * 0.25 +
+    score_obp(obp) * 0.25 +
+    score_slg(slg) * 0.25 +
+    score_kpct(kpct) * 0.15 +
+    score_bbpct(bbpct) * 0.10
+}
+
+df$OverallScore <- compute_overall(df$BA_calc, df$OBP_calc, df$SLG_calc, df$Kpct, df$BBpct)
+
+# ============================================================
+# Compute Overall Percentile
+# ============================================================
+df$Overall_pct <- percentile(df$OverallScore, higher_is_better = TRUE)
+
+# ============================================================
+# Filter for player + season
+# ============================================================
+p <- df %>%
+  filter(
+    NameClean == player_name_clean,
+    Season == as.numeric(season)
+  )
+
+if (nrow(p) == 0) {
+    cat(toJSON(list(error = "Player not found"), auto_unbox = TRUE))
+    quit(status = 1)
+}
+
+# ============================================================
+# Build JSON output
 # ============================================================
 result <- p %>%
   transmute(
-    # Core analyzer metrics
     BA   = as.numeric(BA_calc),
     OBP  = as.numeric(OBP_calc),
     SLG  = as.numeric(SLG_calc),
     Kpct = as.numeric(Kpct),
     BBpct = as.numeric(BBpct),
 
-    # Raw stats for debugging / future metrics
+    Overall_pct = as.numeric(Overall_pct),
+
     PA   = if (!is.na(pa_col))  as.numeric(.data[[pa_col]])  else NA_real_,
     AB   = if (!is.na(ab_col))  as.numeric(.data[[ab_col]])  else NA_real_,
     H    = if (!is.na(h_col))   as.numeric(.data[[h_col]])   else NA_real_,
