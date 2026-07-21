@@ -223,6 +223,8 @@ result <- p %>%
 
     Overall_pct = as.numeric(Overall_pct),
 
+    Team = if (!is.na(team_col)) as.character(.data[[team_col]]) else NA_character_,   # ⭐ NEW
+
     PA   = if (!is.na(pa_col))  as.numeric(.data[[pa_col]])  else NA_real_,
     AB   = if (!is.na(ab_col))  as.numeric(.data[[ab_col]])  else NA_real_,
     H    = if (!is.na(h_col))   as.numeric(.data[[h_col]])   else NA_real_,
@@ -238,5 +240,6 @@ result <- p %>%
     SH   = if (!is.na(sh_col))  as.numeric(.data[[sh_col]])  else NA_real_,
     IBB  = if (!is.na(ibb_col)) as.numeric(.data[[ibb_col]]) else NA_real_
   )
+
 
 cat(toJSON(result, pretty = TRUE, auto_unbox = TRUE))
