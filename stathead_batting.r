@@ -225,7 +225,6 @@ result <- p %>%
     BBpct = as.numeric(BBpct),
 
     Overall_pct = as.numeric(Overall_pct),
-    OverallScore = as.numeric(OverallScore),
 
 
     Team = if (!is.na(team_col)) as.character(.data[[team_col]]) else NA_character_,   # ⭐ NEW
