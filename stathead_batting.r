@@ -200,8 +200,25 @@ df$OverallScore <- compute_overall(df$BA_calc, df$OBP_calc, df$SLG_calc, df$Kpct
 df$Overall_pct <- percentile(df$OverallScore, higher_is_better = TRUE)
 
 # ============================================================
+# XP Formula (NEW)
+# ============================================================
+
+compute_xp <- function(ba, obp, slg, bbpct, kpct) {
+    xp <- (ba * 1000) +
+          (obp * 1000) +
+          (slg * 1000) +
+          (bbpct * 2) -
+          (kpct * 1.5)
+
+    return(xp)
+}
+
+df$XP <- compute_xp(df$BA_calc, df$OBP_calc, df$SLG_calc, df$BBpct, df$Kpct)
+
+# ============================================================
 # Filter for player + season
 # ============================================================
+
 p <- df %>%
   filter(
     NameClean == player_name_clean,
@@ -213,9 +230,6 @@ if (nrow(p) == 0) {
     quit(status = 1)
 }
 
-# ============================================================
-# Build JSON output
-# ============================================================
 result <- p %>%
   transmute(
     BA   = as.numeric(BA_calc),
@@ -225,9 +239,9 @@ result <- p %>%
     BBpct = as.numeric(BBpct),
 
     Overall_pct = as.numeric(Overall_pct),
+    XP = as.numeric(XP),
 
-
-    Team = if (!is.na(team_col)) as.character(.data[[team_col]]) else NA_character_,   # ⭐ NEW
+    Team = if (!is.na(team_col)) as.character(.data[[team_col]]) else NA_character_,
 
     PA   = if (!is.na(pa_col))  as.numeric(.data[[pa_col]])  else NA_real_,
     AB   = if (!is.na(ab_col))  as.numeric(.data[[ab_col]])  else NA_real_,
@@ -244,6 +258,5 @@ result <- p %>%
     SH   = if (!is.na(sh_col))  as.numeric(.data[[sh_col]])  else NA_real_,
     IBB  = if (!is.na(ibb_col)) as.numeric(.data[[ibb_col]]) else NA_real_
   )
-
 
 cat(toJSON(result, pretty = TRUE, auto_unbox = TRUE))
