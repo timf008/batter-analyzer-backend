@@ -15,10 +15,10 @@ df <- read.csv(file_path, stringsAsFactors = FALSE)
 # -------------------------------
 message("DEBUG: Loaded CSV")
 message("DEBUG: File path: ", file_path)
-message("DEBUG: Column names:")
-message(paste(names(df), collapse = ", "))
+message("DEBUG: Column names: ", paste(names(df), collapse = ", "))
 message("DEBUG: First 5 rows:")
 print(head(df, 5))
+flush.console()
 
 # -------------------------------
 # Clamp helper
@@ -28,78 +28,48 @@ clamp <- function(x, min_val = 0, max_val = 10) {
 }
 
 # -------------------------------
-# Scoring functions (Batting 5‑metric model)
+# Scoring functions
 # -------------------------------
-scoreBA <- function(ba) {
-  score <- 10 * (ba - 0.240) / (0.300 - 0.240)
-  clamp(score)
-}
+scoreBA <- function(ba) clamp(10 * (ba - 0.240) / (0.300 - 0.240))
+scoreOBP <- function(obp) clamp(10 * (obp - 0.300) / (0.380 - 0.300))
+scoreSLG <- function(slg) clamp(10 * (slg - 0.380) / (0.550 - 0.380))
+scoreKpct <- function(kpct) clamp(10 * (30 - kpct) / (30 - 15))
+scoreBBpct <- function(bbpct) clamp(10 * (bbpct - 5) / (12 - 5))
 
-scoreOBP <- function(obp) {
-  score <- 10 * (obp - 0.300) / (0.380 - 0.300)
-  clamp(score)
-}
-
-scoreSLG <- function(slg) {
-  score <- 10 * (slg - 0.380) / (0.550 - 0.380)
-  clamp(score)
-}
-
-scoreKpct <- function(kpct) {
-  score <- 10 * (30 - kpct) / (30 - 15)
-  clamp(score)
-}
-
-scoreBBpct <- function(bbpct) {
-  score <- 10 * (bbpct - 5) / (12 - 5)
-  clamp(score)
-}
-
-# -------------------------------
-# Weighted Overall Score
-# -------------------------------
 computeWeightedOverall <- function(baScore, obpScore, slgScore, kpctScore, bbpctScore) {
-  (baScore   * 0.25 +
-   obpScore  * 0.25 +
-   slgScore  * 0.25 +
-   kpctScore * 0.15 +
-   bbpctScore* 0.10)
+  baScore*0.25 + obpScore*0.25 + slgScore*0.25 + kpctScore*0.15 + bbpctScore*0.10
 }
 
 # -------------------------------
-# MAIN PROCESSING (crash‑proof)
+# MAIN PROCESSING
 # -------------------------------
 
 message("DEBUG: Converting numeric columns...")
-
 df <- df %>%
   rename(HR2 = HR.1) %>%   # handle duplicate HR column safely
   mutate(
-    PA  = as.numeric(PA),
-    AB  = as.numeric(AB),
-    BB  = as.numeric(BB),
-    SO  = as.numeric(SO),
-    BA  = as.numeric(BA),
-    OBP = as.numeric(OBP),
-    SLG = as.numeric(SLG)
+    PA  = suppressWarnings(as.numeric(PA)),
+    AB  = suppressWarnings(as.numeric(AB)),
+    BB  = suppressWarnings(as.numeric(BB)),
+    SO  = suppressWarnings(as.numeric(SO)),
+    BA  = suppressWarnings(as.numeric(BA)),
+    OBP = suppressWarnings(as.numeric(OBP)),
+    SLG = suppressWarnings(as.numeric(SLG))
   )
+flush.console()
 
-message("DEBUG: After numeric conversion:")
+message("DEBUG: Structure after numeric conversion:")
 print(str(df))
+flush.console()
 
 message("DEBUG: Filtering AB > 50 and PA > 0...")
-
-df <- df %>%
-  filter(
-    !is.na(AB), !is.na(PA),
-    AB > 50,
-    PA > 0
-  )
-
+df <- df %>% filter(!is.na(AB), !is.na(PA), AB > 50, PA > 0)
 message("DEBUG: Rows after filter: ", nrow(df))
 message("DEBUG: First 5 rows after filter:")
 print(head(df, 5))
+flush.console()
 
+message("DEBUG: Running mutate scoring block...")
 df <- df %>%
   mutate(
     Kpct  = round((SO / PA) * 100, 1),
@@ -124,12 +94,12 @@ df <- df %>%
          (BBpct * 2) -
          (Kpct * 1.5)
   ) %>%
-  
   arrange(desc(overall)) %>%
   slice(1:50)
 
 message("DEBUG: Final DF rows: ", nrow(df))
 message("DEBUG: Final DF preview:")
 print(head(df, 10))
+flush.console()
 
 cat(toJSON(df, pretty = FALSE, auto_unbox = TRUE))
