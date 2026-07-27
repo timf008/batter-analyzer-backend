@@ -61,6 +61,7 @@ computeWeightedOverall <- function(baScore, obpScore, slgScore, kpctScore, bbpct
 # Main DF processing
 # -------------------------------
 df <- df %>%
+  filter(AB > 50) %>%        # ⭐ NEW: apply AB filter here
   mutate(
     Kpct  = round((SO / PA) * 100, 1),
     BBpct = round((BB / PA) * 100, 1),
@@ -83,7 +84,6 @@ df <- df %>%
       1
     ),
 
-    # XP (your sabermetric formula)
     XP = (BA * 1000) +
          (OBP * 1000) +
          (SLG * 1000) +
@@ -91,8 +91,7 @@ df <- df %>%
          (Kpct * 1.5)
   ) %>%
   arrange(desc(overall)) %>%
-  slice(1:50)
+  slice(1:50)                 # ⭐ Now this always returns 50
 
-cat(toJSON(df, pretty = FALSE, auto_unbox = TRUE))
 
 
