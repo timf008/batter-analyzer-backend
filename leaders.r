@@ -11,6 +11,16 @@ file_path <- file.path(getwd(), sprintf("stathead_batting_%s.csv", season))
 df <- read.csv(file_path, stringsAsFactors = FALSE)
 
 # -------------------------------
+# DEBUG: Print CSV structure
+# -------------------------------
+cat("DEBUG: Loaded CSV\n")
+cat("DEBUG: File path: ", file_path, "\n")
+cat("DEBUG: Column names:\n")
+print(names(df))
+cat("DEBUG: First 5 rows:\n")
+print(head(df, 5))
+
+# -------------------------------
 # Clamp helper
 # -------------------------------
 clamp <- function(x, min_val = 0, max_val = 10) {
@@ -20,7 +30,6 @@ clamp <- function(x, min_val = 0, max_val = 10) {
 # -------------------------------
 # Scoring functions (Batting 5‑metric model)
 # -------------------------------
-
 scoreBA <- function(ba) {
   score <- 10 * (ba - 0.240) / (0.300 - 0.240)
   clamp(score)
@@ -58,16 +67,45 @@ computeWeightedOverall <- function(baScore, obpScore, slgScore, kpctScore, bbpct
 }
 
 # -------------------------------
-# Main DF processing
+# MAIN PROCESSING (crash‑proof)
 # -------------------------------
+
+cat("DEBUG: Converting numeric columns...\n")
+
 df <- df %>%
-  filter(AB > 50, PA > 0) %>%   # ⭐ Prevent division-by-zero crash
+  rename(HR2 = HR.1) %>%   # handle duplicate HR column safely
+  mutate(
+    PA  = as.numeric(PA),
+    AB  = as.numeric(AB),
+    BB  = as.numeric(BB),
+    SO  = as.numeric(SO),
+    BA  = as.numeric(BA),
+    OBP = as.numeric(OBP),
+    SLG = as.numeric(SLG)
+  )
+
+cat("DEBUG: After numeric conversion:\n")
+print(str(df))
+
+cat("DEBUG: Filtering AB > 50 and PA > 0...\n")
+
+df <- df %>%
+  filter(
+    !is.na(AB), !is.na(PA),
+    AB > 50,
+    PA > 0
+  )
+
+cat("DEBUG: Rows after filter:\n")
+print(nrow(df))
+
+cat("DEBUG: First 5 rows after filter:\n")
+print(head(df, 5))
+
+df <- df %>%
   mutate(
     Kpct  = round((SO / PA) * 100, 1),
     BBpct = round((BB / PA) * 100, 1),
-    BA    = round(BA, 3),
-    OBP   = round(OBP, 3),
-    SLG   = round(SLG, 3),
 
     baScore    = scoreBA(BA),
     obpScore   = scoreOBP(OBP),
@@ -91,6 +129,8 @@ df <- df %>%
   arrange(desc(overall)) %>%
   slice(1:50)
 
+cat("DEBUG: Final DF rows:", nrow(df), "\n")
+cat("DEBUG: Final DF preview:\n")
+print(head(df, 10))
 
-
-
+cat(toJSON(df, pretty = FALSE, auto_unbox = TRUE))
