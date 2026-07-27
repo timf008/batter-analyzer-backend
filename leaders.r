@@ -61,7 +61,7 @@ computeWeightedOverall <- function(baScore, obpScore, slgScore, kpctScore, bbpct
 # Main DF processing
 # -------------------------------
 df <- df %>%
-  filter(AB > 50) %>%        # ⭐ NEW: apply AB filter here
+  filter(AB > 50, PA > 0) %>%   # ⭐ Prevent division-by-zero crash
   mutate(
     Kpct  = round((SO / PA) * 100, 1),
     BBpct = round((BB / PA) * 100, 1),
@@ -69,14 +69,12 @@ df <- df %>%
     OBP   = round(OBP, 3),
     SLG   = round(SLG, 3),
 
-    # Normalized scores (0–10)
     baScore    = scoreBA(BA),
     obpScore   = scoreOBP(OBP),
     slgScore   = scoreSLG(SLG),
     kpctScore  = scoreKpct(Kpct),
     bbpctScore = scoreBBpct(BBpct),
 
-    # Weighted overall score (rounded to .1)
     overall = round(
       computeWeightedOverall(
         baScore, obpScore, slgScore, kpctScore, bbpctScore
@@ -91,7 +89,8 @@ df <- df %>%
          (Kpct * 1.5)
   ) %>%
   arrange(desc(overall)) %>%
-  slice(1:50)                 # ⭐ Now this always returns 50
+  slice(1:50)
+
 
 
 
