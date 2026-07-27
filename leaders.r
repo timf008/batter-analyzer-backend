@@ -90,6 +90,7 @@ df <- df %>%
          (BBpct * 2) -
          (Kpct * 1.5)
   ) %>%
+  filter(AB > 50) %>%        # ⭐ ADDED HERE — safest location
   arrange(desc(overall)) %>%
   slice(1:50)
 
