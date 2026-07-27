@@ -13,11 +13,11 @@ df <- read.csv(file_path, stringsAsFactors = FALSE)
 # -------------------------------
 # DEBUG: Print CSV structure
 # -------------------------------
-cat("DEBUG: Loaded CSV\n")
-cat("DEBUG: File path: ", file_path, "\n")
-cat("DEBUG: Column names:\n")
-print(names(df))
-cat("DEBUG: First 5 rows:\n")
+message("DEBUG: Loaded CSV")
+message("DEBUG: File path: ", file_path)
+message("DEBUG: Column names:")
+message(paste(names(df), collapse = ", "))
+message("DEBUG: First 5 rows:")
 print(head(df, 5))
 
 # -------------------------------
@@ -70,7 +70,7 @@ computeWeightedOverall <- function(baScore, obpScore, slgScore, kpctScore, bbpct
 # MAIN PROCESSING (crash‑proof)
 # -------------------------------
 
-cat("DEBUG: Converting numeric columns...\n")
+message("DEBUG: Converting numeric columns...")
 
 df <- df %>%
   rename(HR2 = HR.1) %>%   # handle duplicate HR column safely
@@ -84,10 +84,10 @@ df <- df %>%
     SLG = as.numeric(SLG)
   )
 
-cat("DEBUG: After numeric conversion:\n")
+message("DEBUG: After numeric conversion:")
 print(str(df))
 
-cat("DEBUG: Filtering AB > 50 and PA > 0...\n")
+message("DEBUG: Filtering AB > 50 and PA > 0...")
 
 df <- df %>%
   filter(
@@ -96,10 +96,8 @@ df <- df %>%
     PA > 0
   )
 
-cat("DEBUG: Rows after filter:\n")
-print(nrow(df))
-
-cat("DEBUG: First 5 rows after filter:\n")
+message("DEBUG: Rows after filter: ", nrow(df))
+message("DEBUG: First 5 rows after filter:")
 print(head(df, 5))
 
 df <- df %>%
@@ -126,11 +124,12 @@ df <- df %>%
          (BBpct * 2) -
          (Kpct * 1.5)
   ) %>%
+  
   arrange(desc(overall)) %>%
   slice(1:50)
 
-cat("DEBUG: Final DF rows:", nrow(df), "\n")
-cat("DEBUG: Final DF preview:\n")
+message("DEBUG: Final DF rows: ", nrow(df))
+message("DEBUG: Final DF preview:")
 print(head(df, 10))
 
 cat(toJSON(df, pretty = FALSE, auto_unbox = TRUE))
