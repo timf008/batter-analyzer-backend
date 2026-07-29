@@ -104,7 +104,7 @@ league_avgs <- df %>%
 # -------------------------------
 # Leaders (Top 50 by Overall)
 # -------------------------------
-leaders <- df %>%
+) %>%
   filter(AB > 50) %>%
   arrange(desc(overall)) %>%
   slice(1:50)
