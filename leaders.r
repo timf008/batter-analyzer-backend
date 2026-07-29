@@ -89,33 +89,9 @@ df <- df %>%
          (SLG * 1000) +
          (BBpct * 2) -
          (Kpct * 1.5)
-  )
-
-# -------------------------------
-# League Averages (AB > 50)
-# -------------------------------
-league_avgs <- df %>%
-  filter(AB > 50) %>%
-  summarise(
-    league_avg_XP      = mean(XP, na.rm = TRUE),
-    league_avg_overall = mean(overall, na.rm = TRUE)
-  )
-
-# -------------------------------
-# Leaders (Top 50 by Overall)
-# -------------------------------
-) %>%
-  filter(AB > 50) %>%
+  ) %>%
+  filter(AB > 50) %>%        # ⭐ ADDED HERE — safest location
   arrange(desc(overall)) %>%
   slice(1:50)
 
-# -------------------------------
-# Final JSON Output
-# -------------------------------
-output <- list(
-  league_averages = league_avgs,
-  leaders = leaders
-)
-
-cat(toJSON(output, pretty = FALSE, auto_unbox = TRUE))
-
+cat(toJSON(df, pretty = FALSE, auto_unbox = TRUE))
