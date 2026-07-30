@@ -157,6 +157,31 @@ app.get("/api/averages", async (req, res) => {
     }
 });
 
+// --------------------------------------
+// API: Batter Player of the Day
+// --------------------------------------
+let cachedBatterOfDay = null;
+let cachedBatterDate = null;
+
+app.get("/api/batter-of-day", async (req, res) => {
+    const today = new Date().toISOString().slice(0, 10);
+
+    // Return cached batter if already selected today
+    if (cachedBatterDate === today && cachedBatterOfDay) {
+        return res.json(cachedBatterOfDay);
+    }
+
+    const season = req.query.season;
+    const result = await runRScript("player_of_day.r", [season]);
+    const player = JSON.parse(result);
+
+    cachedBatterOfDay = player;
+    cachedBatterDate = today;
+
+    res.json(player);
+});
+
+
 
 // --------------------------------------
 // API: Last Updated timestamp for batting CSV
