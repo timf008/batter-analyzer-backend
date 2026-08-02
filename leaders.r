@@ -88,9 +88,31 @@ df <- df %>%
          (OBP * 1000) +
          (SLG * 1000) +
          (BBpct * 2) -
-         (Kpct * 1.5)
+         (Kpct * 1.5),
+
+    # -------------------------------
+    # Fantasy Identity (Batter Levels)
+    # -------------------------------
+    identity = case_when(
+      XP >= 1200 & overall >= 8.0 ~ "Breakout",
+      XP <= 1100 & overall >= 6.5 ~ "Sleeper",
+      XP >= 1100 & overall <= 7.0 ~ "Overperformer",
+      XP >= 1000 & overall >= 5.0 ~ "Consistent",
+      TRUE ~ "Neutral"
+    ),
+
+    # -------------------------------
+    # Draft Tiers (Pure Analyzer Style)
+    # -------------------------------
+    tier = case_when(
+      overall >= 9.0 ~ "Tier 1",
+      overall >= 8.0 ~ "Tier 2",
+      overall >= 7.0 ~ "Tier 3",
+      overall >= 6.0 ~ "Tier 4",
+      TRUE ~ "Tier 5"
+    )
   ) %>%
-  filter(AB > 50) %>%        # ⭐ ADDED HERE — safest location
+  filter(AB > 50) %>%
   arrange(desc(overall)) %>%
   slice(1:50)
 
