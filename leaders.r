@@ -91,18 +91,19 @@ df <- df %>%
          (Kpct * 1.5),
 
     # -------------------------------
-    # Fantasy Identity (Batter Levels)
+    # Fantasy Identity (Batter Levels) DRAFT KIT
     # -------------------------------
     identity = case_when(
-      XP >= 1200 & overall >= 8.0 ~ "Breakout",
-      XP <= 1100 & overall >= 6.5 ~ "Sleeper",
-      XP >= 1100 & overall <= 7.0 ~ "Overperformer",
-      XP >= 1000 & overall >= 5.0 ~ "Consistent",
-      TRUE ~ "Neutral"
-    ),
+  overall >= 8.0 ~ "Breakout",
+  XP >= 1100 & overall <= 7.9 ~ "Overperformer",
+  XP <= 1100 & overall >= 6.5 ~ "Sleeper",
+  XP >= 1000 & overall >= 5.0 ~ "Consistent",
+  TRUE ~ "Neutral"
+)
+
 
     # -------------------------------
-    # Draft Tiers (Pure Analyzer Style)
+    # Draft Tiers (Pure Analyzer Style) DRAFT KIT
     # -------------------------------
     tier = case_when(
       overall >= 9.0 ~ "Tier 1",
