@@ -99,7 +99,7 @@ df <- df %>%
   XP <= 1100 & overall >= 6.5 ~ "Sleeper",
   XP >= 1000 & overall >= 5.0 ~ "Consistent",
   TRUE ~ "Neutral"
-)
+),
 
 
     # -------------------------------
