@@ -291,11 +291,6 @@ df$OverallDivergence <-
 overall_divergence_sd <-
     sd(df$OverallDivergence, na.rm = TRUE)
 
-Overall = as.numeric(OverallScore),
-ExpectedOverall = as.numeric(ExpectedOverall),
-OverallDivergence = as.numeric(OverallDivergence),
-OverallDivergenceSD = as.numeric(overall_divergence_sd),
-
 # ============================================================
 # Compute Overall Percentile
 # ============================================================
@@ -355,6 +350,7 @@ result <- p %>%
     Overall = as.numeric(OverallScore),
     ExpectedOverall = as.numeric(ExpectedOverall),
     OverallDivergence = as.numeric(OverallDivergence),
+    OverallDivergenceSD = as.numeric(overall_divergence_sd),
 
     Overall_pct = as.numeric(Overall_pct),
     XP = as.numeric(XP),
