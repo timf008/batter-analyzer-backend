@@ -35,11 +35,21 @@ function normalizeNameBackend(x) {
 // ---------------------------
 function runR(cmd, timeoutMs = 8000) {
     return new Promise((resolve) => {
-        exec(cmd, { timeout: timeoutMs }, (error, stdout) => {
+        exec(cmd, { timeout: timeoutMs }, (error, stdout, stderr) => {
+
             if (error) {
-                console.error("R crashed or timed out:", error);
+                console.error("R crashed or timed out:");
+                console.error("ERROR:", error);
+                console.error("STDERR:", stderr);
+                console.error("STDOUT:", stdout);
+
                 return resolve(null);
             }
+
+            if (stderr) {
+                console.warn("R STDERR:", stderr);
+            }
+
             resolve(stdout);
         });
     });
