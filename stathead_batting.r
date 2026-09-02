@@ -205,11 +205,9 @@ df$BBpct_score <- score_bbpct(df$BBpct)
 # ============================================================
 # Cross-Sectional Expected Overall
 #
-# Uses ONLY the current season dataset.
+# Uses the current season population.
 # Each player's profile is compared with the 10 closest
 # complete profiles using the five component scores.
-#
-# The player himself is excluded from his peer group.
 # ============================================================
 
 profile_cols <- c(
@@ -225,67 +223,73 @@ valid_profiles <- complete.cases(df[, profile_cols]) &
 
 profile_indices <- which(valid_profiles)
 
-# Standardize the current population once.
-profile_matrix <- scale(df[valid_profiles, profile_cols])
+# Standardize profiles
+profile_matrix <- scale(
+    as.matrix(df[valid_profiles, profile_cols])
+)
 
-# Store the scaling parameters so every player is transformed
-# into the same standardized five-dimensional space.
-profile_centers <- attr(profile_matrix, "scaled:center")
-profile_scales  <- attr(profile_matrix, "scaled:scale")
+# ============================================================
+# Calculate all pairwise distances ONCE
+# ============================================================
 
-calculate_expected_overall <- function(player_index, k = 10) {
+distance_matrix <- as.matrix(dist(profile_matrix))
 
-    player_profile <- as.numeric(df[player_index, profile_cols])
+# Prevent each player from selecting himself
+diag(distance_matrix) <- Inf
 
-    # Standardize this player's five component scores
-    player_z <- (player_profile - profile_centers) / profile_scales
+# ============================================================
+# Expected Overall from 10 nearest neighbors
+# ============================================================
 
-    # Euclidean distance to every valid player
-    distances <- rowSums(
-        (sweep(profile_matrix, 2, player_z, "-"))^2
-    )^0.5
+k <- 10
 
-    # Exclude the player himself
-    self_position <- which(profile_indices == player_index)
+expected_overall_valid <- apply(
+    distance_matrix,
+    1,
+    function(d) {
 
-    if (length(self_position) > 0) {
-        distances[self_position] <- Inf
+        finite <- which(is.finite(d))
+
+        if (length(finite) == 0) {
+            return(NA_real_)
+        }
+
+        neighbors <- finite[
+            order(d[finite])[
+                1:min(k, length(finite))
+            ]
+        ]
+
+        neighbor_indices <- profile_indices[neighbors]
+
+        mean(
+            df$OverallScore[neighbor_indices],
+            na.rm = TRUE
+        )
     }
+)
 
-    # Select nearest neighbors
-    finite_positions <- which(is.finite(distances))
-
-    if (length(finite_positions) == 0) {
-        return(NA_real_)
-    }
-
-    neighbor_positions <- order(distances[finite_positions])
-
-    neighbor_positions <- finite_positions[
-        neighbor_positions[1:min(k, length(neighbor_positions))]
-    ]
-
-    neighbor_indices <- profile_indices[neighbor_positions]
-
-    mean(df$OverallScore[neighbor_indices], na.rm = TRUE)
-}
-
+# Store result back into full dataframe
 df$ExpectedOverall <- NA_real_
 
-for (i in profile_indices) {
-    df$ExpectedOverall[i] <- calculate_expected_overall(i, k = 10)
-}
+df$ExpectedOverall[profile_indices] <-
+    expected_overall_valid
+
 
 # ============================================================
 # Overall Divergence
-#
-# Positive = Actual Overall is above comparable-player expectation
-# Negative = Actual Overall is below comparable-player expectation
 # ============================================================
 
-df$OverallDivergence <- df$OverallScore - df$ExpectedOverall
+df$OverallDivergence <-
+    df$OverallScore - df$ExpectedOverall
 
-overall_divergence_sd <- sd(df$OverallDivergence, na.rm = TRUE)
+
+# ============================================================
+# Overall Divergence Standard Deviation
+# ============================================================
+
+overall_divergence_sd <-
+    sd(df$OverallDivergence, na.rm = TRUE)
 
 Overall = as.numeric(OverallScore),
 ExpectedOverall = as.numeric(ExpectedOverall),
