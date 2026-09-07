@@ -2,6 +2,7 @@
 
 library(dplyr)
 library(jsonlite)
+library(stringi)
 
 args <- commandArgs(trailingOnly = TRUE)
 season <- args[1]
@@ -9,6 +10,11 @@ season <- args[1]
 file_path <- file.path(getwd(), sprintf("stathead_batting_%s.csv", season))
 
 df <- read.csv(file_path, stringsAsFactors = FALSE)
+
+# -------------------------------
+# Normalize player names for ticker
+# -------------------------------
+df$Player <- stri_trans_general(df$Player, "Latin-ASCII")
 
 # -------------------------------
 # Clamp helper
