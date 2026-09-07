@@ -91,14 +91,38 @@ df <- df %>%
          (Kpct * 1.5),
 
     # -------------------------------
-    # Fantasy Identity (Batter Levels) DRAFT KIT
-    # -------------------------------
-    identity = case_when(
-  overall >= 8.0 ~ "Breakout",
-  XP >= 1100 & overall <= 7.9 ~ "Overperformer",
-  XP <= 1100 & overall >= 6.5 ~ "Sleeper",
-  XP >= 1000 & overall >= 5.0 ~ "Consistent",
-  TRUE ~ "Neutral"
+# Fantasy Identity (Batters)
+# Mirrors JS xpTier + applySkillModifier
+# -------------------------------
+
+base_identity = case_when(
+  XP >= 1200 ~ "breakout",
+  XP >= 1100 ~ "overperformer",
+  XP >= 1000 ~ "sleeper",
+  XP >= 900  ~ "consistent",
+  TRUE       ~ "neutral"
+),
+
+identity_index = case_when(
+  base_identity == "neutral"       ~ 1,
+  base_identity == "consistent"    ~ 2,
+  base_identity == "sleeper"       ~ 3,
+  base_identity == "overperformer" ~ 4,
+  base_identity == "breakout"      ~ 5
+),
+
+identity_index = case_when(
+  overall >= 8.0 ~ pmin(identity_index + 1, 5),
+  overall <= 6.0 ~ pmax(identity_index - 1, 1),
+  TRUE           ~ identity_index
+),
+
+identity = case_when(
+  identity_index == 5 ~ "Breakout",
+  identity_index == 4 ~ "Overperformer",
+  identity_index == 3 ~ "Sleeper",
+  identity_index == 2 ~ "Consistent",
+  TRUE                ~ "Neutral"
 ),
 
 
