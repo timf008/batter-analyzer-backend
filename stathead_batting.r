@@ -51,6 +51,7 @@ if (!file.exists(file_path)) {
 }
 
 df <- read_csv(file_path, show_col_types = FALSE)
+print(names(df), file = stderr())
 
 # ============================================================
 # Normalize column names
