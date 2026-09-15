@@ -103,7 +103,7 @@ sf_col  <- get_col("^SF$")
 sh_col  <- get_col("^SH$")
 ibb_col <- get_col("^IBB$")
 
-hr_col  <- get_col("^HR$")
+hr_col  <- get_col("^HR")
 b1_col  <- get_col("^1B$")
 b2_col  <- get_col("^2B$")
 b3_col  <- get_col("^3B$")
