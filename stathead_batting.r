@@ -93,6 +93,8 @@ get_col <- function(pattern) {
 pa_col  <- get_col("^PA$")
 ab_col  <- get_col("^AB$")
 h_col   <- get_col("^H$")
+r_col   <- get_col("^R$")
+rbi_col <- get_col("^RBI$")
 bb_col  <- get_col("^BB$")
 so_col  <- get_col("^SO")
 tb_col  <- get_col("^TB$")
@@ -106,7 +108,7 @@ b1_col  <- get_col("^1B$")
 b2_col  <- get_col("^2B$")
 b3_col  <- get_col("^3B$")
 
-team_col <- get_col("^Team$")   # ⭐ NEW
+team_col <- get_col("^Team$")
 
 # ============================================================
 # Fallback for singles if 1B missing
@@ -370,6 +372,8 @@ result <- p %>%
     `1B` = if (!is.na(b1_col))  as.numeric(.data[[b1_col]])  else NA_real_,
     `2B` = if (!is.na(b2_col))  as.numeric(.data[[b2_col]])  else NA_real_,
     `3B` = if (!is.na(b3_col))  as.numeric(.data[[b3_col]])  else NA_real_,
+    R    = if (!is.na(r_col))   as.numeric(.data[[r_col]])   else NA_real_,
+    RBI  = if (!is.na(rbi_col)) as.numeric(.data[[rbi_col]]) else NA_real_,
     HBP  = if (!is.na(hbp_col)) as.numeric(.data[[hbp_col]]) else NA_real_,
     SF   = if (!is.na(sf_col))  as.numeric(.data[[sf_col]])  else NA_real_,
     SH   = if (!is.na(sh_col))  as.numeric(.data[[sh_col]])  else NA_real_,
