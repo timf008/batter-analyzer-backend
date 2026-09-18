@@ -110,6 +110,52 @@ b3_col  <- get_col("^3B$")
 
 team_col <- get_col("^Team$")
 
+
+# ============================================================
+# Load Park Factors
+# ============================================================
+park_file <- file.path(getwd(), "mlb_park_factors_2024_2026.csv")
+
+if (!file.exists(park_file)) {
+    cat(toJSON(list(error = paste("Park factor CSV not found:", park_file)), auto_unbox = TRUE))
+    quit(status = 1)
+}
+
+park_factors <- read_csv(park_file, show_col_types = FALSE)
+
+names(park_factors) <- names(park_factors) |>
+  str_replace_all("%", "pct") |>
+  str_replace_all("/", "_") |>
+  str_replace_all("\\.", "") |>
+  str_replace_all(" ", "_")
+
+required_park_cols <- c("TeamCode", "Team", "Venue", "Park_Factor", "H", "1B", "2B", "3B", "HR", "BB")
+
+missing_park_cols <- setdiff(required_park_cols, names(park_factors))
+
+if (length(missing_park_cols) > 0) {
+    cat(toJSON(
+        list(error = paste("Missing park factor columns:", paste(missing_park_cols, collapse = ", "))),
+        auto_unbox = TRUE
+    ))
+    quit(status = 1)
+}
+
+park_lookup <- park_factors %>%
+  transmute(
+    ParkTeamCode = as.character(TeamCode),
+    ParkTeam = as.character(Team),
+    ParkVenue = as.character(Venue),
+    ParkFactor = as.numeric(Park_Factor),
+    PF_H = as.numeric(H),
+    PF_1B = as.numeric(`1B`),
+    PF_2B = as.numeric(`2B`),
+    PF_3B = as.numeric(`3B`),
+    PF_HR = as.numeric(HR),
+    PF_BB = as.numeric(BB)
+  )
+
+
 # ============================================================
 # Fallback for singles if 1B missing
 # ============================================================
@@ -117,6 +163,31 @@ if (is.na(b1_col) && !is.na(h_col) && !is.na(b2_col) && !is.na(b3_col) && !is.na
     df$Singles_calc <- df[[h_col]] - (df[[b2_col]] + df[[b3_col]] + df[[hr_col]])
     b1_col <- "Singles_calc"
 }
+
+
+# ============================================================
+# Match each single-team player to his home park
+# Multi-team codes (for example, PHISFG) remain unmatched.
+# Athletics remain unmatched unless ATH is added to the park CSV.
+# ============================================================
+if (!is.na(team_col)) {
+    df <- df %>%
+      left_join(
+        park_lookup,
+        by = setNames("ParkTeamCode", team_col)
+      )
+} else {
+    df$ParkTeam <- NA_character_
+    df$ParkVenue <- NA_character_
+    df$ParkFactor <- NA_real_
+    df$PF_H <- NA_real_
+    df$PF_1B <- NA_real_
+    df$PF_2B <- NA_real_
+    df$PF_3B <- NA_real_
+    df$PF_HR <- NA_real_
+    df$PF_BB <- NA_real_
+}
+
 
 # ============================================================
 # Recalculate BA, OBP, SLG for ALL players
@@ -203,6 +274,69 @@ df$OBP_score <- score_obp(df$OBP_calc)
 df$SLG_score <- score_slg(df$SLG_calc)
 df$Kpct_score <- score_kpct(df$Kpct)
 df$BBpct_score <- score_bbpct(df$BBpct)
+
+
+# ============================================================
+# Park-Adjusted Overall
+#
+# Park exposure approximation:
+#   50% home park + 50% neutral environment
+#
+# Only BA / OBP / SLG inputs are park-adjusted.
+# K% and BB% scores remain unchanged.
+# Original Overall, XP, divergence, and percentile calculations
+# continue to use the unadjusted statistics.
+# ============================================================
+effective_pf <- function(pf) {
+    0.5 * (pf / 100) + 0.5
+}
+
+df$H_park_adj  <- df[[h_col]]  / effective_pf(df$PF_H)
+df$BB_park_adj <- df[[bb_col]] / effective_pf(df$PF_BB)
+df$B1_park_adj <- df[[b1_col]] / effective_pf(df$PF_1B)
+df$B2_park_adj <- df[[b2_col]] / effective_pf(df$PF_2B)
+df$B3_park_adj <- df[[b3_col]] / effective_pf(df$PF_3B)
+df$HR_park_adj <- df[[hr_col]] / effective_pf(df$PF_HR)
+
+df$BA_park_adj <- ifelse(
+    !is.na(ab_col) & df[[ab_col]] > 0,
+    df$H_park_adj / df[[ab_col]],
+    NA_real_
+)
+
+HBP_park <- if (!is.na(hbp_col)) df[[hbp_col]] else 0
+SF_park  <- if (!is.na(sf_col))  df[[sf_col]]  else 0
+
+obp_park_den <- df[[ab_col]] + df[[bb_col]] + HBP_park + SF_park
+obp_park_num <- df$H_park_adj + df$BB_park_adj + HBP_park
+
+df$OBP_park_adj <- ifelse(
+    obp_park_den > 0,
+    obp_park_num / obp_park_den,
+    NA_real_
+)
+
+park_tb <- df$B1_park_adj +
+           (2 * df$B2_park_adj) +
+           (3 * df$B3_park_adj) +
+           (4 * df$HR_park_adj)
+
+df$SLG_park_adj <- ifelse(
+    !is.na(ab_col) & df[[ab_col]] > 0,
+    park_tb / df[[ab_col]],
+    NA_real_
+)
+
+df$ParkAdjustedOverall <- compute_overall(
+    df$BA_park_adj,
+    df$OBP_park_adj,
+    df$SLG_park_adj,
+    df$Kpct,
+    df$BBpct
+)
+
+df$ParkAdjustment <- df$ParkAdjustedOverall - df$OverallScore
+
 
 # ============================================================
 # Cross-Sectional Expected Overall
@@ -350,6 +484,10 @@ result <- p %>%
     BBpct_score = as.numeric(BBpct_score),
 
     Overall = as.numeric(OverallScore),
+    ParkAdjustedOverall = as.numeric(ParkAdjustedOverall),
+    ParkAdjustment = as.numeric(ParkAdjustment),
+    ParkVenue = as.character(ParkVenue),
+    ParkFactor = as.numeric(ParkFactor),
     ExpectedOverall = as.numeric(ExpectedOverall),
     OverallDivergence = as.numeric(OverallDivergence),
     OverallDivergenceSD = as.numeric(overall_divergence_sd),
