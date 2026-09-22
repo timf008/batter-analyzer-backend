@@ -162,11 +162,7 @@ if (player_name == "__LIST__") {
 
     players <- df %>%
         transmute(
-            Player = sapply(
-    as.character(.data[[name_col]]),
-    decode_stathead_name,
-    USE.NAMES = FALSE
-),
+            Player = str_to_title(NameClean),
             Team = if (!is.na(team_col))
                 as.character(.data[[team_col]])
             else
