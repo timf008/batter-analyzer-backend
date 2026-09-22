@@ -78,15 +78,6 @@ if (is.na(name_col)) {
     quit(status = 1)
 }
 
-test_name <- df[[name_col]][grepl("Gim", df[[name_col]])][1]
-
-cat(
-    "RAW NAME TEST:",
-    test_name,
-    "\n",
-    file = stderr()
-)
-
 # ============================================================
 # Normalize CSV names (UTF-8 SAFE)
 # ============================================================
@@ -154,6 +145,20 @@ decode_stathead_name <- function(x) {
     x
 }
 
+format_browser_name <- function(x) {
+
+    name <- str_to_title(x)
+
+    # Restore common two-letter initials
+    name <- str_replace_all(
+        name,
+        "\\b([A-Za-z])([A-Za-z])\\b",
+        function(m) toupper(m)
+    )
+
+    return(name)
+}
+
 # ============================================================
 # Player Browser Mode
 # ============================================================
@@ -162,7 +167,11 @@ if (player_name == "__LIST__") {
 
     players <- df %>%
         transmute(
-            Player = str_to_title(NameClean),
+            Player = sapply(
+    NameClean,
+    format_browser_name,
+    USE.NAMES = FALSE
+),
             Team = if (!is.na(team_col))
                 as.character(.data[[team_col]])
             else
