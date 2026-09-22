@@ -149,22 +149,19 @@ format_browser_name <- function(x) {
 
     name <- str_to_title(x)
 
-    # Restore two-letter initials: JT, CJ, AJ, etc.
-    name <- str_replace_all(
-        name,
-        "\\b([A-Za-z])([A-Za-z])\\b",
-        function(m) toupper(m)
+    # Known two-letter initial-style first names
+    initials <- c(
+        "Aj", "Bj", "Cj", "Dj", "Jj",
+        "Jt", "Tj"
     )
 
-    # Restore suffixes
-    name <- str_replace_all(name, "\\bJR\\b", "Jr")
-    name <- str_replace_all(name, "\\bSR\\b", "Sr")
+    parts <- str_split(name, " ", simplify = TRUE)
 
-    # Restore surname particles
-    name <- str_replace_all(name, "\\bDE\\b", "De")
-    name <- str_replace_all(name, "\\bLA\\b", "La")
+    if (parts[1] %in% initials) {
+        parts[1] <- toupper(parts[1])
+    }
 
-    return(name)
+    paste(parts[parts != ""], collapse = " ")
 }
 
 # ============================================================
