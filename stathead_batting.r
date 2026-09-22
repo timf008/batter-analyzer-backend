@@ -118,7 +118,7 @@ if (player_name == "__LIST__") {
 
     players <- df %>%
         transmute(
-            Player = as.character(.data[[name_col]]),
+            Player = stri_unescape_unicode(as.character(.data[[name_col]])),
             Team = if (!is.na(team_col))
                 as.character(.data[[team_col]])
             else
