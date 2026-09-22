@@ -52,6 +52,13 @@ if (!file.exists(file_path)) {
 
 df <- read_csv(file_path, show_col_types = FALSE)
 
+cat(
+    "RAW NAME TEST:",
+    as.character(df[[2]][grepl("Gim", df[[2]])][1]),
+    "\n",
+    file = stderr()
+)
+
 # ============================================================
 # Normalize column names
 # ============================================================
@@ -70,6 +77,15 @@ if (is.na(name_col)) {
     cat(toJSON(list(error = "No Player column found"), auto_unbox = TRUE))
     quit(status = 1)
 }
+
+test_name <- df[[name_col]][grepl("Gim", df[[name_col]])][1]
+
+cat(
+    "RAW NAME TEST:",
+    test_name,
+    "\n",
+    file = stderr()
+)
 
 # ============================================================
 # Normalize CSV names (UTF-8 SAFE)
