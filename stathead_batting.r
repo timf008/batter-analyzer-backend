@@ -110,39 +110,32 @@ b3_col  <- get_col("^3B$")
 
 team_col <- get_col("^Team$")
 
-decode_unicode_tags <- function(x) {
+decode_stathead_name <- function(x) {
 
-    sapply(x, function(value) {
+    pattern <- "<U\\+([0-9A-Fa-f]{4,6})>"
 
-        matches <- str_extract_all(
-            value,
-            "<U\\+[0-9A-Fa-f]{4,6}>"
-        )[[1]]
+    while (grepl(pattern, x)) {
 
-        if (length(matches) == 0) {
-            return(value)
-        }
+        tag <- regmatches(x, regexpr(pattern, x))
 
-        for (tag in matches) {
+        hex <- sub(
+            "<U\\+([0-9A-Fa-f]{4,6})>",
+            "\\1",
+            tag
+        )
 
-            hex <- str_replace_all(
-                tag,
-                c("<U\\+" = "", ">" = "")
-            )
+        replacement <- intToUtf8(
+            strtoi(hex, base = 16)
+        )
 
-            character <- intToUtf8(
-                strtoi(hex, base = 16)
-            )
+        x <- sub(
+            pattern,
+            replacement,
+            x
+        )
+    }
 
-            value <- str_replace(
-                value,
-                fixed(tag),
-                character
-            )
-        }
-
-        value
-    }, USE.NAMES = FALSE)
+    x
 }
 
 # ============================================================
@@ -153,8 +146,10 @@ if (player_name == "__LIST__") {
 
     players <- df %>%
         transmute(
-            Player = decode_unicode_tags(
-    as.character(.data[[name_col]])
+            Player = sapply(
+    as.character(.data[[name_col]]),
+    decode_stathead_name,
+    USE.NAMES = FALSE
 ),
             Team = if (!is.na(team_col))
                 as.character(.data[[team_col]])
