@@ -110,6 +110,41 @@ b3_col  <- get_col("^3B$")
 
 team_col <- get_col("^Team$")
 
+decode_unicode_tags <- function(x) {
+
+    sapply(x, function(value) {
+
+        matches <- str_extract_all(
+            value,
+            "<U\\+[0-9A-Fa-f]{4,6}>"
+        )[[1]]
+
+        if (length(matches) == 0) {
+            return(value)
+        }
+
+        for (tag in matches) {
+
+            hex <- str_replace_all(
+                tag,
+                c("<U\\+" = "", ">" = "")
+            )
+
+            character <- intToUtf8(
+                strtoi(hex, base = 16)
+            )
+
+            value <- str_replace(
+                value,
+                fixed(tag),
+                character
+            )
+        }
+
+        value
+    }, USE.NAMES = FALSE)
+}
+
 # ============================================================
 # Player Browser Mode
 # ============================================================
@@ -118,7 +153,9 @@ if (player_name == "__LIST__") {
 
     players <- df %>%
         transmute(
-            Player = stri_unescape_unicode(as.character(.data[[name_col]])),
+            Player = decode_unicode_tags(
+    as.character(.data[[name_col]])
+),
             Team = if (!is.na(team_col))
                 as.character(.data[[team_col]])
             else
