@@ -110,6 +110,34 @@ b3_col  <- get_col("^3B$")
 
 team_col <- get_col("^Team$")
 
+# ============================================================
+# Player Browser Mode
+# ============================================================
+
+if (player_name == "__LIST__") {
+
+    players <- df %>%
+        transmute(
+            Player = as.character(.data[[name_col]]),
+            Team = if (!is.na(team_col))
+                as.character(.data[[team_col]])
+            else
+                NA_character_
+        ) %>%
+        filter(!is.na(Player), Player != "") %>%
+        arrange(Player)
+
+    cat(
+        toJSON(
+            players,
+            pretty = TRUE,
+            auto_unbox = TRUE
+        )
+    )
+
+    quit(status = 0)
+}
+
 
 # ============================================================
 # Load Park Factors
