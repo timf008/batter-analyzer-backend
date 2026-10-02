@@ -460,6 +460,25 @@ distance_matrix <- as.matrix(dist(profile_matrix))
 diag(distance_matrix) <- Inf
 
 # ============================================================
+# Similar Profiles Distance Matrix
+#
+# Uses the raw 0-10 component scores rather than standardized
+# scores. This preserves the original five-metric profile
+# geometry for player-to-player similarity.
+# ============================================================
+
+similarity_matrix <- as.matrix(
+    df[valid_profiles, profile_cols]
+)
+
+similarity_distance_matrix <- as.matrix(
+    dist(similarity_matrix)
+)
+
+# Prevent each player from matching himself
+diag(similarity_distance_matrix) <- Inf
+
+# ============================================================
 # Expected Overall from 10 nearest neighbors
 # ============================================================
 
