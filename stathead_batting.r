@@ -697,4 +697,13 @@ result <- p %>%
     IBB  = if (!is.na(ibb_col)) as.numeric(.data[[ibb_col]]) else NA_real_
   )
 
-cat(toJSON(result, pretty = TRUE, auto_unbox = TRUE))
+result$SimilarProfiles <- list(similar_profiles)
+
+cat(
+    toJSON(
+        result,
+        pretty = TRUE,
+        auto_unbox = TRUE,
+        na = "null"
+    )
+)
