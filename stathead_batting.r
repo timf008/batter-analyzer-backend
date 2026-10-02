@@ -697,7 +697,21 @@ result <- p %>%
     IBB  = if (!is.na(ibb_col)) as.numeric(.data[[ibb_col]]) else NA_real_
   )
 
+cat(
+    "SIMILAR PROFILE COUNT:",
+    length(similar_profiles),
+    "\n",
+    file = stderr()
+)
+
 result$SimilarProfiles <- list(similar_profiles)
+
+cat(
+    "RESULT COLUMNS:",
+    paste(names(result), collapse = ", "),
+    "\n",
+    file = stderr()
+)
 
 cat(
     toJSON(
