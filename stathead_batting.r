@@ -252,17 +252,62 @@ if (is.na(b1_col) && !is.na(h_col) && !is.na(b2_col) && !is.na(b3_col) && !is.na
 
 
 # ============================================================
-# Match each single-team player to his home park
-# Multi-team codes (for example, PHISFG) remain unmatched.
-# Athletics remain unmatched unless ATH is added to the park CSV.
+# Match each player to his current / most recent home park
+#
+# Single-team codes:
+#   TBR -> TBR
+#
+# Multi-team Stathead codes:
+#   MIATBR -> TBR
+#   PHISFG -> SFG
+#
+# Original team value remains unchanged for display purposes.
 # ============================================================
+
 if (!is.na(team_col)) {
+
+    park_codes <- park_lookup$ParkTeamCode
+
+    get_park_team <- function(team) {
+
+        code <- toupper(trimws(as.character(team)))
+
+        # Single-team player
+        if (code %in% park_codes) {
+            return(code)
+        }
+
+        # Multi-team player:
+        # use the team code found at the END of the Stathead value
+        matches <- park_codes[
+            vapply(
+                park_codes,
+                function(x) endsWith(code, x),
+                logical(1)
+            )
+        ]
+
+        if (length(matches) > 0) {
+            return(matches[which.max(nchar(matches))])
+        }
+
+        NA_character_
+    }
+
+    df$ParkLookupTeam <- vapply(
+        df[[team_col]],
+        get_park_team,
+        character(1)
+    )
+
     df <- df %>%
-      left_join(
-        park_lookup,
-        by = setNames("ParkTeamCode", team_col)
-      )
+        left_join(
+            park_lookup,
+            by = c("ParkLookupTeam" = "ParkTeamCode")
+        )
+
 } else {
+
     df$ParkTeam <- NA_character_
     df$ParkVenue <- NA_character_
     df$ParkFactor <- NA_real_
