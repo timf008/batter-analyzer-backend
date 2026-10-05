@@ -770,6 +770,18 @@ league_avg_xp <- mean(df$XP, na.rm = TRUE)
 # Filter for player + season
 # ============================================================
 
+cat(
+    "PLAYER DEBUG:",
+    "input =", player_name,
+    "| clean =", player_name_clean,
+    "| season arg =", season,
+    "| rows =", nrow(df),
+    "| name matches =", sum(df$NameClean == player_name_clean, na.rm = TRUE),
+    "| season matches =", sum(df$Season == as.numeric(season), na.rm = TRUE),
+    "\n",
+    file = stderr()
+)
+
 p <- df %>%
   filter(
     NameClean == player_name_clean,
