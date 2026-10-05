@@ -406,6 +406,168 @@ df$SLG_score <- score_slg(df$SLG_calc)
 df$Kpct_score <- score_kpct(df$Kpct)
 df$BBpct_score <- score_bbpct(df$BBpct)
 
+# ============================================================
+# Hitter Archetype / Profile Shape
+#
+# Archetype is based on the SHAPE of the five component scores,
+# not the player's overall skill level.
+#
+# Step 1: Center each player's five scores around his own mean.
+# Step 2: Measure Euclidean distance from that centered profile
+#         to each multi-season archetype landmark.
+# Step 3: Assign the nearest landmark as the primary archetype.
+# Step 4: Compare nearest vs second-nearest distance to determine
+#         archetype match strength.
+#
+# Landmarks derived from combined 2024-2026 qualified hitters.
+# ============================================================
+
+archetype_landmarks <- rbind(
+
+    "Contact First" = c(
+        BA  =  0.50,
+        OBP = -1.22,
+        SLG = -2.27,
+        K   =  4.81,
+        BB  = -1.82
+    ),
+
+    "Patient / Low Impact" = c(
+        BA  = -2.56,
+        OBP = -0.88,
+        SLG = -2.79,
+        K   =  3.38,
+        BB  =  2.84
+    ),
+
+    "Power / Patience" = c(
+        BA  = -2.18,
+        OBP =  0.17,
+        SLG = -0.66,
+        K   = -1.53,
+        BB  =  4.20
+    ),
+
+    "Balanced Profile" = c(
+        BA  =  0.07,
+        OBP = -0.62,
+        SLG =  0.73,
+        K   =  0.26,
+        BB  = -0.43
+    )
+)
+
+
+classify_archetype <- function(
+    ba_score,
+    obp_score,
+    slg_score,
+    k_score,
+    bb_score
+) {
+
+    scores <- c(
+        BA  = ba_score,
+        OBP = obp_score,
+        SLG = slg_score,
+        K   = k_score,
+        BB  = bb_score
+    )
+
+    # Cannot classify an incomplete profile
+    if (any(!is.finite(scores))) {
+        return(c(
+            Archetype = NA_character_,
+            ArchetypeMatch = NA_character_,
+            ArchetypeStrength = NA_character_
+        ))
+    }
+
+    # Remove general player strength.
+    # What remains is the relative five-metric shape.
+    profile_mean <- mean(scores)
+
+    shape <- scores - profile_mean
+
+    # Euclidean distance from this player's shape
+    # to each archetype landmark.
+    distances <- apply(
+        archetype_landmarks,
+        1,
+        function(landmark) {
+            sqrt(sum((shape - landmark)^2))
+        }
+    )
+
+    # Rank archetypes from closest to farthest
+    ranked <- sort(distances)
+
+    nearest_distance <- ranked[1]
+    second_distance  <- ranked[2]
+
+    archetype <- names(ranked)[1]
+
+    # Measures how decisively the nearest archetype
+    # beats the second-nearest archetype.
+    #
+    # 0.00 = essentially on a boundary
+    # Larger values = clearer archetype membership
+    if (
+        !is.finite(second_distance) ||
+        second_distance <= 0
+    ) {
+        match_strength <- NA_real_
+    } else {
+        match_strength <-
+            1 - (nearest_distance / second_distance)
+    }
+
+    # Empirical match-strength bands
+    match_label <- case_when(
+        is.na(match_strength)      ~ NA_character_,
+        match_strength >= 0.50    ~ "Strong Match",
+        match_strength >= 0.30    ~ "Moderate Match",
+        TRUE                      ~ "Weak Match"
+    )
+
+    c(
+        Archetype = archetype,
+        ArchetypeMatch = match_label,
+        ArchetypeStrength = ifelse(
+            is.na(match_strength),
+            NA_character_,
+            sprintf("%.3f", match_strength)
+        )
+    )
+}
+
+
+# ============================================================
+# Classify all hitters
+# ============================================================
+
+archetype_results <- t(
+    mapply(
+        classify_archetype,
+        df$BA_score,
+        df$OBP_score,
+        df$SLG_score,
+        df$Kpct_score,
+        df$BBpct_score
+    )
+)
+
+df$Archetype <-
+    archetype_results[, "Archetype"]
+
+df$ArchetypeMatch <-
+    archetype_results[, "ArchetypeMatch"]
+
+df$ArchetypeStrength <-
+    as.numeric(
+        archetype_results[, "ArchetypeStrength"]
+    )
+
 
 # ============================================================
 # Park-Adjusted Overall
@@ -706,6 +868,10 @@ result <- p %>%
     SLG_score  = as.numeric(SLG_score),
     Kpct_score = as.numeric(Kpct_score),
     BBpct_score = as.numeric(BBpct_score),
+
+    Archetype = as.character(Archetype),
+    ArchetypeMatch = as.character(ArchetypeMatch),
+    ArchetypeStrength = as.numeric(ArchetypeStrength),
 
     Overall = as.numeric(OverallScore),
     ParkAdjustedOverall = as.numeric(ParkAdjustedOverall),
