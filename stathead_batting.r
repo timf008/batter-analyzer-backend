@@ -499,47 +499,43 @@ classify_archetype <- function(
         }
     )
 
-    # Rank archetypes from closest to farthest
-    ranked <- sort(distances)
+# Rank archetypes from closest to farthest
+ranked <- sort(distances)
 
-    nearest_distance <- ranked[1]
-    second_distance  <- ranked[2]
+nearest_distance <- unname(ranked[1])
+second_distance  <- unname(ranked[2])
 
-    archetype <- names(ranked)[1]
+archetype <- names(ranked)[1]
 
-    # Measures how decisively the nearest archetype
-    # beats the second-nearest archetype.
-    #
-    # 0.00 = essentially on a boundary
-    # Larger values = clearer archetype membership
-    if (
-        !is.finite(second_distance) ||
-        second_distance <= 0
-    ) {
-        match_strength <- NA_real_
-    } else {
-        match_strength <-
-            1 - (nearest_distance / second_distance)
-    }
-
-    # Empirical match-strength bands
-    match_label <- case_when(
-        is.na(match_strength)      ~ NA_character_,
-        match_strength >= 0.50    ~ "Strong Match",
-        match_strength >= 0.30    ~ "Moderate Match",
-        TRUE                      ~ "Weak Match"
-    )
-
-    c(
-        Archetype = archetype,
-        ArchetypeMatch = match_label,
-        ArchetypeStrength = ifelse(
-            is.na(match_strength),
-            NA_character_,
-            sprintf("%.3f", match_strength)
-        )
-    )
+# Measures how decisively the nearest archetype
+# beats the second-nearest archetype.
+if (
+    !is.finite(second_distance) ||
+    second_distance <= 0
+) {
+    match_strength <- NA_real_
+} else {
+    match_strength <-
+        1 - (nearest_distance / second_distance)
 }
+
+# Empirical match-strength bands
+match_label <- case_when(
+    is.na(match_strength)   ~ NA_character_,
+    match_strength >= 0.50 ~ "Strong Match",
+    match_strength >= 0.30 ~ "Moderate Match",
+    TRUE                   ~ "Weak Match"
+)
+
+return(c(
+    Archetype = unname(archetype),
+    ArchetypeMatch = unname(match_label),
+    ArchetypeStrength = ifelse(
+        is.na(match_strength),
+        NA_character_,
+        sprintf("%.3f", unname(match_strength))
+    )
+))
 
 
 # ============================================================
