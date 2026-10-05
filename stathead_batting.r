@@ -536,7 +536,7 @@ return(c(
         sprintf("%.3f", unname(match_strength))
     )
 ))
-
+}
 
 # ============================================================
 # Classify all hitters
