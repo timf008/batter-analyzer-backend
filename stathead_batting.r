@@ -546,27 +546,44 @@ classify_archetype <- function(
 # Classify all hitters
 # ============================================================
 
-archetype_results <- t(
-    mapply(
-        classify_archetype,
-        df$BA_score,
-        df$OBP_score,
-        df$SLG_score,
-        df$Kpct_score,
-        df$BBpct_score
-    )
+archetype_results <- lapply(
+    seq_len(nrow(df)),
+    function(i) {
+        classify_archetype(
+            df$BA_score[i],
+            df$OBP_score[i],
+            df$SLG_score[i],
+            df$Kpct_score[i],
+            df$BBpct_score[i]
+        )
+    }
 )
 
-df$Archetype <-
-    archetype_results[, "Archetype"]
+df$Archetype <- vapply(
+    archetype_results,
+    function(x) x[["Archetype"]],
+    character(1)
+)
 
-df$ArchetypeMatch <-
-    archetype_results[, "ArchetypeMatch"]
+df$ArchetypeMatch <- vapply(
+    archetype_results,
+    function(x) x[["ArchetypeMatch"]],
+    character(1)
+)
 
-df$ArchetypeStrength <-
-    as.numeric(
-        archetype_results[, "ArchetypeStrength"]
-    )
+df$ArchetypeStrength <- vapply(
+    archetype_results,
+    function(x) {
+        value <- x[["ArchetypeStrength"]]
+
+        if (is.na(value)) {
+            return(NA_real_)
+        }
+
+        as.numeric(value)
+    },
+    numeric(1)
+)
 
 
 # ============================================================
