@@ -3,6 +3,8 @@ const cors = require("cors");
 const path = require("path");
 const { exec } = require("child_process");
 const fs = require("fs");
+const newsCache = new Map();
+const NEWS_CACHE_MS = 15 * 60 * 1000;
 
 const app = express();
 
@@ -223,6 +225,77 @@ app.get("/api/batter-of-day", async (req, res) => {
     res.json(player);
 });
 
+// --------------------------------------
+// API: FantasyPros News and Fantasy Impact
+// --------------------------------------
+
+app.get("/api/player-news/:mlbId", async (req, res) => {
+  const { mlbId } = req.params;
+
+  if (!/^\d{6}$/.test(mlbId)) {
+    return res.status(400).json({ error: "Invalid MLBID" });
+  }
+
+  const cached = newsCache.get(mlbId);
+
+  if (cached && Date.now() - cached.time < NEWS_CACHE_MS) {
+    return res.json(cached.data);
+  }
+
+  if (!process.env.FANTASYPROS_API_KEY) {
+    return res.status(503).json({
+      error: "FantasyPros API key not configured"
+    });
+  }
+
+  try {
+    const url = new URL(
+      "https://api.fantasypros.com/public/v2/json/mlb/news"
+    );
+
+    url.searchParams.set("MLBAMID", mlbId);
+    url.searchParams.set("limit", "3");
+
+    const response = await fetch(url, {
+      headers: {
+        "x-api-key": process.env.FANTASYPROS_API_KEY
+      },
+      signal: AbortSignal.timeout(10000)
+    });
+
+    if (!response.ok) {
+      throw new Error(`FantasyPros returned ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    const result = {
+      player: data.player_name || null,
+      articles: (data.items || []).map(item => ({
+        id: item.id,
+        title: item.title,
+        date: item.created,
+        description: item.desc,
+        impact: item.impact,
+        link: item.link
+      }))
+    };
+
+    newsCache.set(mlbId, {
+      time: Date.now(),
+      data: result
+    });
+
+    res.json(result);
+
+  } catch (error) {
+    console.error("Player news error:", error.message);
+
+    res.status(502).json({
+      error: "Unable to retrieve player news"
+    });
+  }
+});
 
 
 // --------------------------------------
