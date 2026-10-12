@@ -24,6 +24,14 @@ async function testArchiveRead() {
         console.log("Archive version:", archive.metadata?.archiveVersion);
         console.log("Source hash:", archive.metadata?.sourceHash);
 
+console.log("Top-level keys:", Object.keys(archive));
+
+for (const [key, value] of Object.entries(archive)) {
+    if (Array.isArray(value)) {
+        console.log(`Array "${key}": ${value.length} records`);
+    }
+}
+
     } catch (error) {
         console.error(
             "TiME Machine: Archive retrieval failed:",
