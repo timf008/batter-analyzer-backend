@@ -32,6 +32,13 @@ for (const [key, value] of Object.entries(archive)) {
     }
 }
 
+if (Array.isArray(archive.players) && archive.players.length > 0) {
+    console.log(
+        "First player fields:",
+        Object.keys(archive.players[0])
+    );
+}
+
     } catch (error) {
         console.error(
             "TiME Machine: Archive retrieval failed:",
