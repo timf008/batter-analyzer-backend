@@ -8,8 +8,8 @@ RUN apt-get update && \
     apt-get install -y software-properties-common curl gnupg && \
     apt-get install -y r-base r-base-dev
 
-# Install Node.js 18 (Render-compatible)
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+# Install Node.js 22 LTS
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
     apt-get install -y nodejs
 
 # Install R packages
