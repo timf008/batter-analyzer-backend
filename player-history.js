@@ -2,6 +2,7 @@
 const { GetObjectCommand } = require("@aws-sdk/client-s3");
 const { r2 } = require("./r2-storage");
 const { listHistoricalArchives } = require("./historical-archives");
+const { validateArchive } = require("./archive-validator");
 
 // Retrieve a player's history across all test snapshots.
 async function getPlayerHistory(bbrefID, season) {
@@ -25,11 +26,15 @@ async function getPlayerHistory(bbrefID, season) {
         const contents = await response.Body.transformToString();
         const snapshot = JSON.parse(contents);
 
-        if (!Array.isArray(snapshot.players)) {
-            throw new Error(
-                `Invalid archive: ${archiveInfo.key}`
-            );
-        }
+// Validate archive before accessing player records
+const validation = validateArchive(snapshot);
+
+if (!validation.valid) {
+    throw new Error(
+        `Archive validation failed: ${archiveInfo.key}. ` +
+        validation.errors.join("; ")
+    );
+}
 
         const player = snapshot.players.find(
             p => String(p.BBRefID) === playerID
