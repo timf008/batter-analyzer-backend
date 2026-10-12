@@ -39,6 +39,27 @@ if (Array.isArray(archive.players) && archive.players.length > 0) {
     );
 }
 
+const ids = archive.players.map(p => p.BBRefID);
+
+const missingIDs = ids.filter(
+    id => id === null ||
+          id === undefined ||
+          String(id).trim() === ""
+).length;
+
+const validIDs = ids.filter(
+    id => id !== null &&
+          id !== undefined &&
+          String(id).trim() !== ""
+);
+
+const uniqueIDs = new Set(validIDs.map(String));
+
+console.log("Total players:", ids.length);
+console.log("Missing BBRefIDs:", missingIDs);
+console.log("Unique BBRefIDs:", uniqueIDs.size);
+console.log("Duplicate BBRefIDs:", validIDs.length - uniqueIDs.size);
+
     } catch (error) {
         console.error(
             "TiME Machine: Archive retrieval failed:",
