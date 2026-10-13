@@ -3,7 +3,7 @@ const { getPlayerHistory } = require("./player-history");
 
 async function runTest() {
     try {
-        const history = await getPlayerHistory("nonexistent999", 2026);
+        const history = await getPlayerHistory("judgeaa01", 2026);
 
         console.log("TiME Machine: Player history lookup successful!");
         console.log("Historical records found:", history.length);
