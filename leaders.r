@@ -137,7 +137,7 @@ identity = case_when(
       TRUE ~ "Tier 5"
     )
   ) %>%
-  filter(AB > 50) %>%
+  filter(G >= 30, PA >= 100) %>%
   arrange(desc(overall)) %>%
   slice(1:50)
 
